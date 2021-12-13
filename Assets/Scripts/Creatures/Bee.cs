@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using DG.Tweening;
 using UnityEngine.UI;
@@ -5,24 +6,28 @@ using UnityEngine.UI;
 public class Bee : MonoBehaviour
 {
     #region Fields
-    
-    [Range(5f, 10f)][SerializeField] private float moveSpeed;
+
+    [Range(5f, 20f)] [SerializeField] private float moveSpeed;
     [SerializeField] private int capacity;
     [SerializeField] private float rotationTime;
-    
+
     private int _count;
     private bool _isActive = false;
     private bool _isCollecting = false;
     private Slider _healthBar;
+    public bool isSwarmReached = false;
+    private float _stoppingDistance;
+    private Vector3 _offset;
+    private Vector3 _startScale;
+    private Collider _col;
+    private Rigidbody _rb;
 
     #endregion
-    
+
     #region Properties
-    
+
     public Swarm Swarm { get; set; }
 
-    public Vector3 Offset { get; set; }
-    
     public bool IsActive => _isActive;
 
     #endregion
@@ -32,12 +37,39 @@ public class Bee : MonoBehaviour
     private void Awake()
     {
         _healthBar = GetComponentInChildren<Slider>();
+        _col = GetComponent<Collider>();
+        _rb = GetComponent<Rigidbody>();
+        _offset = Vector3.up * 2;
+        _startScale = transform.localScale;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!_isActive)
+            return;
+
+        _rb.velocity = Vector3.zero;
+        _stoppingDistance = _col.bounds.extents.z;
+         if (Vector3.Distance(transform.position, Swarm.transform.position + _offset) < _stoppingDistance)
+         {
+             isSwarmReached = true;
+         }
+         if (!isSwarmReached)
+         {
+             transform.position = Vector3.MoveTowards(transform.position, 
+                                                  Swarm.transform.position + _offset, 
+                                                moveSpeed * 0.02f);
+         }
+         else
+         {
+             _rb.isKinematic = true;
+         }
     }
 
     #endregion
-    
+
     #region OnEnable/OnDisable
-    
+
     private void OnEnable()
     {
         Swarm.OnSwarmMoved += MoveToSwarm;
@@ -47,7 +79,7 @@ public class Bee : MonoBehaviour
     {
         Swarm.OnSwarmMoved -= MoveToSwarm;
     }
-    
+
     #endregion
 
     #region Methods
@@ -56,21 +88,18 @@ public class Bee : MonoBehaviour
     {
         if (!_isActive) return;
 
-        transform.DOKill();
+        isSwarmReached = false;
+        _rb.isKinematic = false;
         
         if (moveDirection != Vector3.zero)
             transform.DORotateQuaternion(Quaternion.LookRotation(moveDirection), rotationTime);
-        
-        transform.DOMove(Swarm.transform.position + Offset, 
-            Vector3.Distance(Swarm.transform.position + Offset, transform.position) / moveSpeed)
-            .SetEase(Ease.Linear);
     }
 
     public void Activate()
     {
         _isActive = true;
     }
-    
+
     public bool IncAmount()
     {
         if (_count == capacity)
@@ -97,14 +126,11 @@ public class Bee : MonoBehaviour
     public void StopCollecting()
     {
         _isCollecting = false;
-        transform.DOKill();
-        if (Swarm)
-        {
-            transform.DOMove(Swarm.transform.position + Offset, 
-                Vector3.Distance(Swarm.transform.position + Offset, transform.position) / moveSpeed)
-                .SetEase(Ease.Linear);
-            transform.DOLookAt(Swarm.transform.position + Offset, rotationTime);
-        }
+        isSwarmReached = false;
+        DOTween.Kill(this);
+        transform.DOScale(_startScale, 0.1f);
+        GetComponentInChildren<SkinnedMeshRenderer>().material.color = Color.white;
+        transform.DOLookAt(Swarm.transform.position + _offset, rotationTime);
     }
 
     public bool TryDecPollen()
@@ -120,13 +146,19 @@ public class Bee : MonoBehaviour
 
     private void UpdateHealthBarValue()
     {
-        _healthBar.value = ((float)_count / capacity);
+        _healthBar.value = ((float) _count / capacity);
     }
 
-    public void MoveToFlower(Transform flower)
+    public void CollectingAnimation(Transform flower)
     {
-        transform.DOKill();
-        transform.DOMove(flower.transform.position + new Vector3(0, 2, 0), 1f);
+        transform.DOMove(flower.transform.position + _offset, 0.5f);
+        transform.DOScale(_startScale * 0.7f, 0.5f);
+        GetComponentInChildren<SkinnedMeshRenderer>().material.color = Color.red;
+    }
+
+    public void SetKinematic(bool isKinematic)
+    {
+        _rb.isKinematic = isKinematic;
     }
     
     #endregion
@@ -138,13 +170,22 @@ public class Bee : MonoBehaviour
         if (other.gameObject.TryGetComponent<Swarm>(out var swarm))
         {
             if (_isActive) return;
-            
+
             Swarm = swarm;
             Swarm.AddToList(this);
-            Offset = transform.position - swarm.transform.position;
             Activate();
         }
     }
-    
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (!isSwarmReached)
+            if (other.gameObject.TryGetComponent<Bee>(out var bee))
+            {
+                if (bee.isSwarmReached)
+                    isSwarmReached = true;
+            }
+    }
+
     #endregion
 }

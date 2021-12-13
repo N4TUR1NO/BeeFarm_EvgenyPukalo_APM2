@@ -26,32 +26,33 @@ public class Flower : MonoBehaviour
 
     #region Methods
 
-    private bool TryCollect(Bee bee)
+    private bool CanCollect()
     {
-        if (_isCollecting)
-            return false;
-
-        StartCollecting(bee);
-        return true;
+        return !_isCollecting;
     }
 
     private void StartCollecting(Bee bee)
     {
-        _isCollecting = true;
-        _currentBee = bee;
         _collectingSeq = DOTween.Sequence();
         _collectingSeq.AppendInterval(collectionTime * bee.Swarm.CollectingTimeMultiplier).OnStepComplete(() =>
         {
             if (_currentBee.IncAmount())
             {
-                SoundController.Instance.PlayClip(SfxType.CollectSfx);
                 DecHealth();
+                SoundController.Instance.PlayClip(SfxType.CollectSfx);
                 CollectingVFX();
                 transform.DOShakeScale(shakeDuration, shakeStrength);
             }
             else
             {
                 StopCollecting(_currentBee);
+                _currentBee.StopCollecting();
+            }
+            
+            if (!_currentBee.isSwarmReached)
+            {
+                StopCollecting(_currentBee);
+                _currentBee.StopCollecting();
             }
         }).SetLoops(-1).Pause();
         _collectingSeq.Restart();
@@ -59,10 +60,9 @@ public class Flower : MonoBehaviour
 
     private void StopCollecting(Bee bee)
     {
-        if (bee != _currentBee)
+        if (bee != _currentBee || !_isCollecting)
             return;
 
-        _currentBee = null;
         _collectingSeq.Pause();
         _isCollecting = false;
     }
@@ -117,31 +117,20 @@ public class Flower : MonoBehaviour
 
     #region Events
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.TryGetComponent<Bee>(out var bee))
-        {
-            if (!bee.CanCollect() || !bee.IsActive)
-                return;
-
-            if (TryCollect(bee))
-            {
-                bee.MoveToFlower(transform);
-            }
-        }
-    }
-
     private void OnTriggerStay(Collider other)
     {
+        if (!CanCollect())
+            return;
+        
         if (other.gameObject.TryGetComponent<Bee>(out var bee))
         {
-            if (!bee.CanCollect() || !bee.IsActive)
+            if (!bee.CanCollect() || !bee.IsActive || _currentBee)
                 return;
-
-            if (TryCollect(bee))
-            {
-                bee.MoveToFlower(transform);
-            }
+            
+            _currentBee = bee;
+            _isCollecting = true;
+            bee.CollectingAnimation(transform);
+            StartCollecting(bee);
         }
     }
 
@@ -149,8 +138,11 @@ public class Flower : MonoBehaviour
     {
         if (other.gameObject.TryGetComponent<Bee>(out var bee))
         {
-            StopCollecting(bee);
+            if (_currentBee != bee) return;
+            
+            StopCollecting(bee); 
             bee.StopCollecting();
+            _currentBee = null;
         }
     }
 

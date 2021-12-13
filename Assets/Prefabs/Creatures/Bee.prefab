@@ -501,7 +501,7 @@ GameObject:
   - component: {fileID: 545314616420637947}
   - component: {fileID: 5521193199461808511}
   - component: {fileID: 466149221}
-  - component: {fileID: 3240726840015822182}
+  - component: {fileID: 7615457139724126680}
   m_Layer: 8
   m_Name: Bee
   m_TagString: Untagged
@@ -558,7 +558,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 126
+  m_Constraints: 116
   m_CollisionDetection: 0
 --- !u!114 &466149221
 MonoBehaviour:
@@ -572,11 +572,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b025f92f53cd8a64cb68c1ae23891aa8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 8
+  moveSpeed: 10
   capacity: 5
   rotationTime: 0.5
---- !u!65 &3240726840015822182
-BoxCollider:
+  isSwarmReached: 0
+--- !u!136 &7615457139724126680
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -585,9 +586,10 @@ BoxCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 0.7999973, z: 1.7414478}
-  m_Center: {x: 0, y: -0.10000134, z: -0.014982422}
+  m_Radius: 0.8
+  m_Height: 2.51
+  m_Direction: 2
+  m_Center: {x: 0, y: -0.2, z: 0}
 --- !u!1 &4423762134077189617
 GameObject:
   m_ObjectHideFlags: 0

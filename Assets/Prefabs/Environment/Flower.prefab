@@ -63,7 +63,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 5
-  collectionTime: 1
+  collectionTime: 0.5
   shakeDuration: 0.3
   shakeStrength: 0.5
   delay: 0

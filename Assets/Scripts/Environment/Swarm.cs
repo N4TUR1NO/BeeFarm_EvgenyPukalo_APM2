@@ -75,10 +75,13 @@ public class Swarm : MonoBehaviour
 
     public void CreateBee()
     {
-        Vector3 offset = new Vector3(Random.Range(-2f, 2f), 2, Random.Range(-2f, 2f));
-        Bee newBee = Instantiate(beePrefab,transform.position + offset, Quaternion.identity).GetComponent<Bee>();
+        Bee newBee = Instantiate(beePrefab,transform.position, Quaternion.identity).GetComponent<Bee>();
         newBee.Swarm = this;
-        newBee.Offset = offset;
+        newBee.isSwarmReached = false;
+        foreach (Bee bee in _bees)
+        {
+            bee.SetKinematic(false);
+        }
         newBee.Activate();
         AddToList(newBee);
     }
